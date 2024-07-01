@@ -1,0 +1,17 @@
+{
+  "name": "canvas-gaming",
+  "module": "src/index.ts",
+  "scripts": {
+    "dev": "bun --hot run src/index.ts"
+  },
+  "type": "module",
+  "devDependencies": {
+    "@types/bun": "latest"
+  },
+  "peerDependencies": {
+    "typescript": "^5.5.3"
+  },
+  "dependencies": {
+    "prettier": "^3.3.2"
+  }
+}
