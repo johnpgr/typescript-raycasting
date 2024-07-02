@@ -1,10 +1,11 @@
 const EPS = 1e-6
 const FACTOR = 80
-const SCREEN_WIDTH = 240
+const SCREEN_WIDTH = 300
 const NEAR_CLIPPING_PLANE = 1.0
 const FAR_CLIPPING_PLANE = 10.0
 const FOV = Math.PI * 0.5
 const PLAYER_SPEED = 0.05
+const print = console.log
 
 function assert(condition: boolean, message?: string): asserts condition {
     if (!condition) {
@@ -31,6 +32,10 @@ class Vector2 {
 
     get length() {
         return Math.sqrt(Math.pow(this.x, 2) + Math.pow(this.y, 2))
+    }
+
+    get sqrLength() {
+        return Math.pow(this.x, 2) + Math.pow(this.y, 2)
     }
 
     public normalize(): Vector2 {
@@ -64,8 +69,12 @@ class Vector2 {
     /**
      * Returns the angle of the vector in radians.
      */
-    public distance(v: Vector2): number {
+    public distanceTo(v: Vector2): number {
         return this.subtract(v).length
+    }
+
+    public sqrDistanceTo(v: Vector2): number {
+        return this.subtract(v).sqrLength
     }
 
     /**
@@ -286,7 +295,7 @@ class Game {
                     const stripHeight = this.canvas.height / verticalHeight.dotProduct(distanceToWall)
 
                     this.drawRect(
-                        this.scene.cells[cell.y][cell.x] as string,
+                        color,
                         x * stripWidth,
                         (this.canvas.height - stripHeight) * 0.5,
                         stripWidth,
@@ -327,7 +336,7 @@ function rayStep(p1: Vector2, p2: Vector2): Vector2 {
             const y3 = snap(p2.y, d.y)
             const x3 = (y3 - c) / k
             const p3y = new Vector2(x3, y3)
-            if (p2.distance(p3y) < p2.distance(p3)) {
+            if (p2.sqrDistanceTo(p3y) < p2.sqrDistanceTo(p3)) {
                 p3 = p3y
             }
         }
@@ -355,12 +364,13 @@ function isPointInSceneBounds(scene: Scene, p: Vector2): boolean {
 }
 
 function castRay(scene: Scene, p1: Vector2, p2: Vector2): Vector2 {
-    while (true) {
+    const start = p1
+    while (start.sqrDistanceTo(p1) < FAR_CLIPPING_PLANE * FAR_CLIPPING_PLANE) {
         const c = getHittingCellPos(p1, p2)
-        if (!isPointInSceneBounds(scene, c) || scene.cells[c.y][c.x] !== null) {
-            break
-        }
+        if (isPointInSceneBounds(scene, c) && scene.cells[c.y][c.x] !== null) break
+
         const p3 = rayStep(p1, p2)
+
         p1 = p2
         p2 = p3
     }
