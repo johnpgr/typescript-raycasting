@@ -1,11 +1,11 @@
 const EPS = 1e-6
 const FACTOR = 80
 const SCREEN_WIDTH = 300
-const NEAR_CLIPPING_PLANE = 1.0
+const NEAR_CLIPPING_PLANE = 0.25
 const FAR_CLIPPING_PLANE = 10.0
+const DEFAULT_MOVESPEED = 2.0
+const DEFAULT_TURN_SPEED = Math.PI * 0.75
 const FOV = Math.PI * 0.5
-const PLAYER_SPEED = 0.05
-const print = console.log
 
 function assert(condition: boolean, message?: string): asserts condition {
     if (!condition) {
@@ -111,14 +111,20 @@ class Vector2 {
 class Entity {
     public position: Vector2
     public direction: number
+    public movespeed: number
 
     constructor(position: Vector2, direction: number) {
         this.position = position
         this.direction = direction
+        this.movespeed = DEFAULT_MOVESPEED
     }
 }
 
 class PlayerEntity extends Entity {
+    public movingForward = false
+    public movingBackward = false
+    public turningLeft = false
+    public turningRight = false
     /**
      * Returns the coordinates of the two points that represent the player's
      * field of view.
@@ -397,39 +403,60 @@ function main(): void {
 
     // Init player position in the middle of the scene
     player.position = game.scene.size.multiply(new Vector2(0.63, 0.63))
-
     // Init minimap position and size
     minimap.position = Vector2.ZERO().add(game.canvasSize.scale(0.02))
+    // Init minimap size
     minimap.size = game.scene.size.scale(game.canvas.width * 0.03)
 
     window.addEventListener("keydown", (e) => {
         //prettier-ignore
         switch (e.code) {
-            case "KeyW": {
-                const direction = Vector2.fromAngle(player.direction).scale(PLAYER_SPEED)
-                player.position = player.position.add(direction)
-                game.render()
-            } break
-
-            case "KeyS": {
-                const direction = Vector2.fromAngle(player.direction).scale(PLAYER_SPEED)
-                player.position = player.position.subtract(direction)
-                game.render()
-            } break
-
-            case "KeyA": {
-                player.direction -= Math.PI * 0.1
-                game.render()
-            } break
-
-            case "KeyD": {
-                player.direction += Math.PI * 0.1
-                game.render()
-            } break
+            case "KeyW": player.movingForward  = true; break
+            case "KeyS": player.movingBackward = true; break
+            case "KeyA": player.turningLeft    = true; break
+            case "KeyD": player.turningRight   = true; break
+        }
+    })
+    window.addEventListener("keyup", (e) => {
+        //prettier-ignore
+        switch (e.code) {
+            case "KeyW": player.movingForward  = false; break
+            case "KeyS": player.movingBackward = false; break
+            case "KeyA": player.turningLeft    = false; break
+            case "KeyD": player.turningRight   = false; break
         }
     })
 
-    game.render()
+    let prevTimestamp = 0
+    const frame = (timestamp: number) => {
+        const dt = (timestamp - prevTimestamp) / 1000
+        prevTimestamp = timestamp
+        let velocity = Vector2.ZERO()
+        let angularVelocity = 0
+
+        if (player.movingForward) {
+            velocity = velocity.add(Vector2.fromAngle(player.direction).scale(player.movespeed))
+        }
+        if (player.movingBackward) {
+            velocity = velocity.subtract(Vector2.fromAngle(player.direction).scale(player.movespeed))
+        }
+        if (player.turningLeft) {
+            angularVelocity -= DEFAULT_TURN_SPEED
+        }
+        if (player.turningRight) {
+            angularVelocity += DEFAULT_TURN_SPEED
+        }
+
+        player.direction = player.direction + angularVelocity * dt
+        player.position = player.position.add(velocity.scale(dt))
+        game.render()
+        requestAnimationFrame(frame)
+    }
+
+    requestAnimationFrame((timestamp) => {
+        prevTimestamp = timestamp
+        frame(timestamp)
+    })
 }
 
 main()
