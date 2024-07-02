@@ -2,7 +2,7 @@
   "name": "canvas-gaming",
   "module": "src/index.ts",
   "scripts": {
-    "dev": "bun --hot run src/index.ts"
+    "dev": "bun --watch dev.ts"
   },
   "type": "module",
   "devDependencies": {
