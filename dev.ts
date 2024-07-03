@@ -2,7 +2,8 @@
 import index from "./index.html" with { type: "text" }
 import { readdir } from "fs/promises"
 
-const assets = await readdir("assets")
+const assets = await readdir("assets", { recursive: true })
+const src = await readdir("src", { recursive: true })
 
 function cmd(command: string, ...args: string[]) {
     console.log("CMD:", command, args)
@@ -39,10 +40,37 @@ export const httpServer = (port: number) => {
                     headers: { "Content-Type": "text/html" },
                 })
             } else {
-                const path = url.pathname.slice(1)
+                let path = url.pathname.slice(1)
+                if (path.endsWith("/")) {
+                    path = path.slice(0, -1)
+                }
 
-                if (assets.includes(path)) {
+                if (src.includes(path)) {
+                    const file = Bun.file(`./src/${path}`)
+
+                    // directory or binary file
+                    if (file.type === "application/octet-stream") {
+                        return new Response("Not Found", {
+                            status: 404,
+                            headers: { "Content-Type": "text/plain" },
+                        })
+                    }
+
+                    return new Response(file, {
+                        headers: {
+                            "Content-Type": file.type,
+                        },
+                    })
+                } else if (assets.includes(path)) {
                     const file = Bun.file(`./assets/${path}`)
+
+                    // directory or binary file
+                    if (file.type === "application/octet-stream") {
+                        return new Response("Not Found", {
+                            status: 404,
+                            headers: { "Content-Type": "text/plain" },
+                        })
+                    }
 
                     return new Response(file, {
                         headers: { "Content-Type": file.type },
@@ -94,5 +122,5 @@ export const wsServer = (port: number) => {
 }
 
 httpServer(3000)
-wsServer(3001)
+// wsServer(3001)
 cmd("tsc", "-w")
