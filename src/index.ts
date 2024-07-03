@@ -1,14 +1,14 @@
 import { DEFAULT_TURN_SPEED } from "./consts.js"
-import { Game, Minimap, PlayerEntity, Scene, Vector2 } from "./game.js"
+import { Color, Game, Minimap, PlayerEntity, Scene, Vector2 } from "./game.js"
 import { assert, loadImage } from "./utils.js"
 
 const [tsodinPog, tsodinFlushed, tsodinZezin, tsodinGasm, tf, typescript] = await Promise.all([
-    loadImage("images/tsodinEmotes/tsodinPog.png"),
-    loadImage("images/tsodinEmotes/tsodinFlushed.png"),
-    loadImage("images/tsodinEmotes/tsodinZezin.png"),
-    loadImage("images/tsodinEmotes/tsodinGasm.png"),
-    loadImage("images/tf.png"),
-    loadImage("images/Typescript_logo_2020.png"),
+    loadImage("assets/images/opengameart/wezu_tex_cc_by/wall1_color.png").catch(Color.magenta),
+    loadImage("assets/images/tsodinEmotes/tsodinFlushed.png").catch(Color.magenta),
+    loadImage("assets/images/tsodinEmotes/tsodinZezin.png").catch(Color.magenta),
+    loadImage("assets/images/tsodinEmotes/tsodinGasm.png").catch(Color.magenta),
+    loadImage("assets/images/tf.png").catch(Color.magenta),
+    loadImage("assets/images/Typescript_logo_2020.png").catch(Color.magenta),
 ])
 
 const scene = Scene([

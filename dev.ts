@@ -2,7 +2,8 @@
 import index from "./src/index.html" with { type: "text" }
 import { readdir } from "fs/promises"
 
-const [assets, dist, src] = await Promise.all([readdir("assets", { recursive: true }), readdir("dist"), readdir("src")])
+let [assets, dist, src] = await Promise.all([readdir("assets", { recursive: true }), readdir("dist"), readdir("src")])
+assets = assets.map((a) => "assets/" + a)
 
 function cmd(command: string, ...args: string[]) {
     console.log("CMD:", command, args)
@@ -79,7 +80,7 @@ export const httpServer = (port: number) => {
                         },
                     })
                 } else if (assets.includes(path)) {
-                    const file = Bun.file(`./assets/${path}`)
+                    const file = Bun.file(path)
 
                     // directory or binary file
                     if (file.type === "application/octet-stream") {
