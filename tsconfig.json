@@ -24,12 +24,10 @@
     "noUnusedLocals": false,
     "noUnusedParameters": false,
     "noPropertyAccessFromIndexSignature": false,
-    "sourceMap": true
+    "sourceMap": true,
+    "outDir": "dist"
   },
-  "exclude": ["dev.ts"]
+  "include": [
+    "src/*.ts"
+  ]
 }
-    
-    
-    
-    
-  

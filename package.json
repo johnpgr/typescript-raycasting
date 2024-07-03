@@ -2,16 +2,13 @@
   "name": "canvas-gaming",
   "module": "src/index.ts",
   "scripts": {
-    "dev": "bun --watch dev.ts"
+    "dev": "bun --watch dev.ts",
+    "build": "tsc --outDir dist"
   },
   "type": "module",
   "devDependencies": {
-    "@types/bun": "latest"
-  },
-  "peerDependencies": {
-    "typescript": "^5.5.3"
-  },
-  "dependencies": {
+    "typescript": "^5.5.3",
+    "@types/bun": "latest",
     "prettier": "^3.3.2"
   }
 }

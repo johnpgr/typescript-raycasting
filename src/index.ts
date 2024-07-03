@@ -3,12 +3,12 @@ import { Game, Minimap, PlayerEntity, Scene, Vector2 } from "./game.js"
 import { assert, loadImage } from "./utils.js"
 
 const [tsodinPog, tsodinFlushed, tsodinZezin, tsodinGasm, tf, typescript] = await Promise.all([
-    await loadImage("images/tsodinEmotes/tsodinPog.png"),
-    await loadImage("images/tsodinEmotes/tsodinFlushed.png"),
-    await loadImage("images/tsodinEmotes/tsodinZezin.png"),
-    await loadImage("images/tsodinEmotes/tsodinGasm.png"),
-    await loadImage("images/tf.png"),
-    await loadImage("images/Typescript_logo_2020.png"),
+    loadImage("images/tsodinEmotes/tsodinPog.png"),
+    loadImage("images/tsodinEmotes/tsodinFlushed.png"),
+    loadImage("images/tsodinEmotes/tsodinZezin.png"),
+    loadImage("images/tsodinEmotes/tsodinGasm.png"),
+    loadImage("images/tf.png"),
+    loadImage("images/Typescript_logo_2020.png"),
 ])
 
 const scene = Scene([

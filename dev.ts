@@ -1,9 +1,8 @@
 // @ts-ignore
-import index from "./index.html" with { type: "text" }
+import index from "./src/index.html" with { type: "text" }
 import { readdir } from "fs/promises"
 
-const assets = await readdir("assets", { recursive: true })
-const src = await readdir(".")
+const [assets, dist, src] = await Promise.all([readdir("assets", { recursive: true }), readdir("dist"), readdir("src")])
 
 function cmd(command: string, ...args: string[]) {
     console.log("CMD:", command, args)
@@ -45,8 +44,26 @@ export const httpServer = (port: number) => {
                     path = path.slice(0, -1)
                 }
 
-                if (src.includes(path)) {
-                    const file = Bun.file(`./${path}`)
+                if (dist.includes(path)) {
+                    const file = Bun.file(`./dist/${path}`)
+
+                    // directory or binary file
+                    if (file.type === "application/octet-stream") {
+                        return new Response("Not Found", {
+                            status: 404,
+                            headers: { "Content-Type": "text/plain" },
+                        })
+                    }
+
+                    return new Response(file, {
+                        headers: {
+                            "Content-Type": file.type,
+                        },
+                    })
+                }
+                // For when clicking in error stacktrace w/ the mapped source in the browser
+                else if (src.includes(path)) {
+                    const file = Bun.file(`./src/${path}`)
 
                     // directory or binary file
                     if (file.type === "application/octet-stream") {
