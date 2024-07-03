@@ -3,7 +3,7 @@
   "module": "src/index.ts",
   "scripts": {
     "dev": "bun --watch dev.ts",
-    "build": "tsc --outDir dist"
+    "build": "tsc"
   },
   "type": "module",
   "devDependencies": {

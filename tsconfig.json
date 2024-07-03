@@ -10,6 +10,7 @@
     "moduleDetection": "force",
     // "jsx": "react-jsx",
     "allowJs": true,
+    "removeComments": true,
     // Bundler mode
     "moduleResolution": "NodeNext",
     // "allowImportingTsExtensions": true,
@@ -24,7 +25,7 @@
     "noUnusedLocals": false,
     "noUnusedParameters": false,
     "noPropertyAccessFromIndexSignature": false,
-    "sourceMap": true,
+    "sourceMap": false,
     "outDir": "dist"
   },
   "include": [

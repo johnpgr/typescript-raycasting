@@ -140,4 +140,4 @@ export const wsServer = (port: number) => {
 
 httpServer(3000)
 // wsServer(3001)
-cmd("tsc", "-w")
+cmd("tsc", "--sourceMap", "-w")
