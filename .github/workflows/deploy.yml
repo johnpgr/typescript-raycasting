@@ -44,7 +44,6 @@ jobs:
           cp -r assets/* artifact/
           cp -r dist/* artifact/
           cp src/index.html artifact/index.html
-          tar -czf artifact.tar.gz -C artifact .
           
       - name: Configure GitHub Pages
         uses: actions/configure-pages@v5
@@ -52,7 +51,7 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: './artifact.tar.gz'
+          path: './artifact'
           
       - name: Deploy to GitHub Pages
         id: deployment
