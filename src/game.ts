@@ -229,6 +229,12 @@ export interface Minimap {
     position: Vector2
 }
 
+export function Minimap(size: Vector2, position: Vector2): Minimap {
+    const self = { size, position } as Minimap
+
+    return self
+}
+
 export interface Game {
     canvas: HTMLCanvasElement
     scene: Scene

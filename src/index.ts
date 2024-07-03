@@ -1,5 +1,5 @@
 import { DEFAULT_TURN_SPEED } from "./consts.js"
-import { Game, PlayerEntity, Scene, Vector2 } from "./game.js"
+import { Game, Minimap, PlayerEntity, Scene, Vector2 } from "./game.js"
 import { assert, loadImage } from "./utils.js"
 
 const [tsodinPog, tsodinFlushed, tsodinZezin, tsodinGasm, tf, typescript] = await Promise.all([
@@ -23,10 +23,7 @@ const scene = Scene([
 const canvas = document.getElementById("game") as HTMLCanvasElement | null
 assert(canvas !== null, "Canvas element not found")
 const player = PlayerEntity(Vector2.zero(), Math.PI * 1.25)
-const game = Game(canvas, scene, player, {
-    position: Vector2.zero(),
-    size: Vector2.zero(),
-})
+const game = Game(canvas, scene, player, Minimap(Vector2.zero(), Vector2.zero()))
 // Init player position in the middle of the scene
 player.position = game.scene.size().multiply(Vector2(0.63, 0.63))
 // Init minimap position and size

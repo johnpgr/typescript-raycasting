@@ -1,5 +1,5 @@
 // @ts-ignore
-import index from "./index.html" with { type: "text" }
+import index from "./src/index.html" with { type: "text" }
 import { readdir } from "fs/promises"
 
 const assets = await readdir("assets", { recursive: true })
