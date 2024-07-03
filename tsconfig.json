@@ -26,7 +26,10 @@
     "noPropertyAccessFromIndexSignature": false,
     "sourceMap": true
   },
-  "include": [
-    "src/**.ts"
-  ]
+  "exclude": ["dev.ts"]
 }
+    
+    
+    
+    
+  

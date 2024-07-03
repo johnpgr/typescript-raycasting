@@ -1,9 +1,9 @@
 // @ts-ignore
-import index from "./src/index.html" with { type: "text" }
+import index from "./index.html" with { type: "text" }
 import { readdir } from "fs/promises"
 
 const assets = await readdir("assets", { recursive: true })
-const src = await readdir("src", { recursive: true })
+const src = await readdir(".")
 
 function cmd(command: string, ...args: string[]) {
     console.log("CMD:", command, args)
