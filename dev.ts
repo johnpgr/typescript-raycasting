@@ -46,7 +46,7 @@ export const httpServer = (port: number) => {
                 }
 
                 if (src.includes(path)) {
-                    const file = Bun.file(`./src/${path}`)
+                    const file = Bun.file(`./${path}`)
 
                     // directory or binary file
                     if (file.type === "application/octet-stream") {
