@@ -45,7 +45,6 @@ jobs:
           cp -r dist/* artifact/
           cp src/index.html artifact/index.html
           tar -czf artifact.tar.gz -C artifact .
-          rm -rf artifact
           
       - name: Configure GitHub Pages
         uses: actions/configure-pages@v5
