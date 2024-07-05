@@ -2,8 +2,11 @@
 import index from "./src/index.html" with { type: "text" }
 import { readdir } from "fs/promises"
 
-let [assets, dist, src] = await Promise.all([readdir("assets", { recursive: true }), readdir("dist"), readdir("src")])
-assets = assets.map((a) => "assets/" + a)
+const [assets, dist, src] = await Promise.all([
+    readdir("assets", { recursive: true }).then((a) => a.map((v) => "assets/" + v)),
+    readdir("dist"),
+    readdir("src"),
+])
 
 function cmd(command: string, ...args: string[]) {
     console.log("CMD:", command, args)

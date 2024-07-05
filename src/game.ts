@@ -18,6 +18,7 @@ export interface Vector2 {
     dotProduct(v: Vector2): number
     interpolate(v: Vector2, t: number): Vector2
     normalize(): Vector2
+    map(fn: (x: number) => number): Vector2
     [Symbol.iterator](): IterableIterator<number>
 }
 
@@ -80,6 +81,10 @@ export function Vector2(x: number, y: number): Vector2 {
         return v.subtract(self).scale(t).add(self)
     }
 
+    self.map = function (fn: (x: number) => number): Vector2 {
+        return Vector2(fn(self.x), fn(self.y))
+    }
+
     self[Symbol.iterator] = function* () {
         yield self.x
         yield self.y
@@ -135,6 +140,12 @@ export function Color(r: number, g: number, b: number, a: number): Color {
 }
 
 export namespace Color {
+    export function isColor(x: any): x is Color {
+        if ("r" in x && "g" in x && "b" in x && "a" in x) {
+            return true
+        }
+        return false
+    }
     export function red(): Color {
         return Color(1, 0, 0, 1)
     }
@@ -176,6 +187,8 @@ export function Entity(position: Vector2, direction: number, movespeed: number):
 export interface PlayerEntity extends Entity {
     movingForward: boolean
     movingBackward: boolean
+    movingLeft: boolean
+    movingRight: boolean
     turningLeft: boolean
     turningRight: boolean
 
@@ -188,6 +201,8 @@ export function PlayerEntity(position: Vector2, direction: number): PlayerEntity
     self.movingBackward = false
     self.turningLeft = false
     self.turningRight = false
+    self.movingRight = false
+    self.movingLeft = false
 
     self.fovRange = function (): [Vector2, Vector2] {
         const l = Math.tan(FOV * 0.5) * NEAR_CLIPPING_PLANE
@@ -315,7 +330,7 @@ export function Game(canvas: HTMLCanvasElement, scene: Scene, player: PlayerEnti
                 if (cell !== null) {
                     if (cell instanceof HTMLImageElement) {
                         self.ctx.drawImage(cell, x, y, 1, 1)
-                    } else {
+                    } else if (Color.isColor(cell)) {
                         drawRect(cell.toStyle(), x, y, 1, 1)
                     }
                 }
@@ -379,7 +394,7 @@ export function Game(canvas: HTMLCanvasElement, scene: Scene, player: PlayerEnti
                             stripWidth,
                             stripHeight,
                         )
-                    } else {
+                    } else if (Color.isColor(cell)) {
                         drawRect(
                             cell.brightness(1 / v.dotProduct(d)).toStyle(),
                             x * stripWidth,
@@ -437,7 +452,7 @@ function snap(x: number, dx: number): number {
     return dx > 0 ? Math.ceil(x + Math.sign(dx) * EPS) : dx < 0 ? Math.floor(x + Math.sign(dx) * EPS) : x
 }
 
-function isPointInSceneBounds(scene: Scene, p: Vector2): boolean {
+export function isPointInSceneBounds(scene: Scene, p: Vector2): boolean {
     const size = scene.size()
     return 0 <= p.x && p.x < size.x && 0 <= p.y && p.y < size.y
 }
