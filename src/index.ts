@@ -1,5 +1,5 @@
 import { DEFAULT_TURN_SPEED } from "./consts.js"
-import { Color, Game, isPointInSceneBounds, Minimap, PlayerEntity, Scene, Vector2 } from "./game.js"
+import { Color, Game, Minimap, PlayerEntity, Scene, Vector2 } from "./game.js"
 import { assert, loadImage } from "./utils.js"
 
 const [tsodinPog, tsodinFlushed, tsodinZezin, tsodinGasm, tf, typescript] = await Promise.all([
@@ -108,7 +108,7 @@ const frame = (timestamp: number) => {
     player.direction = player.direction + angularVelocity * dt
     const newPosition = player.position.add(velocity.scale(dt))
     const newCellPosition = newPosition.map(Math.floor)
-    if (!(isPointInSceneBounds(scene, newCellPosition) && scene.cells[newCellPosition.y][newCellPosition.x] !== null)) {
+    if (!(game.isPointInSceneBounds(newCellPosition) && scene.cells[newCellPosition.y][newCellPosition.x] !== null)) {
         player.position = newPosition // Move only if there's no walls in the new position
     }
     game.render()

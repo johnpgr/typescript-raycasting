@@ -23,17 +23,35 @@ export interface Vector2 {
 }
 
 export function Vector2(x: number, y: number): Vector2 {
-    const self = { x, y } as Vector2
+    const self: Vector2 = {
+        x,
+        y,
+        length,
+        sqrLength,
+        add,
+        divide,
+        subtract,
+        multiply,
+        scale,
+        distanceTo,
+        sqrDistanceTo,
+        rotate90,
+        dotProduct,
+        interpolate,
+        normalize,
+        map,
+        [Symbol.iterator]: iterate,
+    }
 
-    self.length = function () {
+    function length() {
         return Math.sqrt(Math.pow(self.x, 2) + Math.pow(self.y, 2))
     }
 
-    self.sqrLength = function () {
+    function sqrLength() {
         return Math.pow(self.x, 2) + Math.pow(self.y, 2)
     }
 
-    self.normalize = function (): Vector2 {
+    function normalize(): Vector2 {
         if (self.length() === 0) {
             return Vector2.zero()
         }
@@ -41,51 +59,51 @@ export function Vector2(x: number, y: number): Vector2 {
         return Vector2(self.x / self.length(), self.y / self.length())
     }
 
-    self.divide = function (v: Vector2): Vector2 {
+    function divide(v: Vector2): Vector2 {
         return Vector2(self.x / v.x, self.y / v.y)
     }
 
-    self.add = function (v: Vector2): Vector2 {
+    function add(v: Vector2): Vector2 {
         return Vector2(self.x + v.x, self.y + v.y)
     }
 
-    self.subtract = function (v: Vector2): Vector2 {
+    function subtract(v: Vector2): Vector2 {
         return Vector2(self.x - v.x, self.y - v.y)
     }
 
-    self.multiply = function (v: Vector2): Vector2 {
+    function multiply(v: Vector2): Vector2 {
         return Vector2(self.x * v.x, self.y * v.y)
     }
 
-    self.scale = function (amount: number): Vector2 {
+    function scale(amount: number): Vector2 {
         return Vector2(self.x * amount, self.y * amount)
     }
 
-    self.distanceTo = function (v: Vector2): number {
+    function distanceTo(v: Vector2): number {
         return self.subtract(v).length()
     }
 
-    self.sqrDistanceTo = function (v: Vector2): number {
+    function sqrDistanceTo(v: Vector2): number {
         return self.subtract(v).sqrLength()
     }
 
-    self.rotate90 = function (): Vector2 {
+    function rotate90(): Vector2 {
         return Vector2(-self.y, self.x)
     }
 
-    self.dotProduct = function (v: Vector2): number {
+    function dotProduct(v: Vector2): number {
         return self.x * v.x + self.y * v.y
     }
 
-    self.interpolate = function (v: Vector2, t: number): Vector2 {
+    function interpolate(v: Vector2, t: number): Vector2 {
         return v.subtract(self).scale(t).add(self)
     }
 
-    self.map = function (fn: (x: number) => number): Vector2 {
+    function map(fn: (x: number) => number): Vector2 {
         return Vector2(fn(self.x), fn(self.y))
     }
 
-    self[Symbol.iterator] = function* () {
+    function* iterate() {
         yield self.x
         yield self.y
     }
@@ -115,13 +133,21 @@ export interface Color {
 }
 
 export function Color(r: number, g: number, b: number, a: number): Color {
-    const self = { r, g, b, a } as Color
+    const self: Color = {
+        r,
+        g,
+        b,
+        a,
+        brightness,
+        toStyle,
+        [Symbol.iterator]: iterate,
+    }
 
-    self.brightness = function (factor: number): Color {
+    function brightness(factor: number): Color {
         return Color(self.r * factor, self.g * factor, self.b * factor, self.a)
     }
 
-    self.toStyle = function (): string {
+    function toStyle(): string {
         const r = Math.floor(self.r * 255)
         const g = Math.floor(self.g * 255)
         const b = Math.floor(self.b * 255)
@@ -129,7 +155,7 @@ export function Color(r: number, g: number, b: number, a: number): Color {
         return `rgba(${r}, ${g}, ${b}, ${self.a})`
     }
 
-    self[Symbol.iterator] = function* () {
+    function* iterate() {
         yield self.r
         yield self.g
         yield self.b
@@ -172,19 +198,10 @@ export namespace Color {
     }
 }
 
-export interface Entity {
+export interface PlayerEntity {
     position: Vector2
     direction: number
     movespeed: number
-}
-
-export function Entity(position: Vector2, direction: number, movespeed: number): Entity {
-    const self = { position, direction, movespeed } as Entity
-
-    return self
-}
-
-export interface PlayerEntity extends Entity {
     movingForward: boolean
     movingBackward: boolean
     movingLeft: boolean
@@ -196,15 +213,20 @@ export interface PlayerEntity extends Entity {
 }
 
 export function PlayerEntity(position: Vector2, direction: number): PlayerEntity {
-    const self = Entity(position, direction, DEFAULT_MOVESPEED) as PlayerEntity
-    self.movingForward = false
-    self.movingBackward = false
-    self.turningLeft = false
-    self.turningRight = false
-    self.movingRight = false
-    self.movingLeft = false
+    const self: PlayerEntity = {
+        position,
+        direction,
+        movespeed: DEFAULT_MOVESPEED,
+        movingForward: false,
+        movingBackward: false,
+        turningLeft: false,
+        turningRight: false,
+        movingRight: false,
+        movingLeft: false,
+        fovRange,
+    }
 
-    self.fovRange = function (): [Vector2, Vector2] {
+    function fovRange(): [Vector2, Vector2] {
         const l = Math.tan(FOV * 0.5) * NEAR_CLIPPING_PLANE
         const p = self.position.add(Vector2.fromAngle(self.direction).scale(NEAR_CLIPPING_PLANE))
         const p1 = p.subtract(p.subtract(self.position).rotate90().normalize().scale(l))
@@ -225,9 +247,9 @@ export interface Scene {
 }
 
 export function Scene(cells: SceneCell[][]) {
-    const self = { cells } as Scene
+    const self: Scene = { cells, size }
 
-    self.size = function (): Vector2 {
+    function size(): Vector2 {
         const y = self.cells.length
         let x = Number.MIN_VALUE
         for (const row of self.cells) {
@@ -258,27 +280,33 @@ export interface Game {
     minimap: Minimap
 
     canvasSize(): Vector2
+    isPointInSceneBounds: (p: Vector2) => boolean
     render(): void
 }
 
 export function Game(canvas: HTMLCanvasElement, scene: Scene, player: PlayerEntity, minimap: Minimap): Game {
-    const self = {} as Game
+    const ctx = canvas.getContext("2d")
+    assert(ctx !== null, "2D not supported OMEGALUL")
 
-    self.canvas = canvas
-    self.scene = scene
+    const self: Game = {
+        canvas,
+        scene,
+        ctx,
+        player,
+        minimap,
+        canvasSize,
+        isPointInSceneBounds,
+        render,
+    }
+
     self.canvas.width = 16 * FACTOR
     self.canvas.height = 9 * FACTOR
-    const _ctx = canvas.getContext("2d")
-    assert(_ctx !== null, "2D not supported OMEGALUL")
-    self.ctx = _ctx
-    self.player = player
-    self.minimap = minimap
 
-    self.canvasSize = function () {
+    function canvasSize() {
         return Vector2(self.ctx.canvas.width, self.ctx.canvas.height)
     }
 
-    self.render = function () {
+    function render() {
         drawBackground("#181818")
         renderScene()
         renderMinimap()
@@ -362,10 +390,10 @@ export function Game(canvas: HTMLCanvasElement, scene: Scene, player: PlayerEnti
         const [r1, r2] = self.player.fovRange()
 
         for (let x = 0; x < SCREEN_WIDTH; x++) {
-            const p = castRay(self.scene, self.player.position, r1.interpolate(r2, x / SCREEN_WIDTH))
+            const p = castRay(self.player.position, r1.interpolate(r2, x / SCREEN_WIDTH))
             const c = getHittingCellPos(self.player.position, p)
 
-            if (isPointInSceneBounds(self.scene, c)) {
+            if (self.isPointInSceneBounds(c)) {
                 const cell = self.scene.cells[c.y][c.x]
 
                 if (cell !== null) {
@@ -408,66 +436,66 @@ export function Game(canvas: HTMLCanvasElement, scene: Scene, player: PlayerEnti
         }
     }
 
-    return self
-}
+    function rayStep(p1: Vector2, p2: Vector2): Vector2 {
+        const d = p2.subtract(p1)
+        let p3 = p2
 
-function rayStep(p1: Vector2, p2: Vector2): Vector2 {
-    const d = p2.subtract(p1)
-    let p3 = p2
+        if (d.x !== 0) {
+            const k = d.y / d.x
+            const c = p1.y - k * p1.x
 
-    if (d.x !== 0) {
-        const k = d.y / d.x
-        const c = p1.y - k * p1.x
-
-        {
-            const x3 = snap(p2.x, d.x)
-            const y3 = x3 * k + c
-            const p3x = Vector2(x3, y3)
-            p3 = p3x
-        }
-
-        if (k !== 0) {
-            const y3 = snap(p2.y, d.y)
-            const x3 = (y3 - c) / k
-            const p3y = Vector2(x3, y3)
-            if (p2.sqrDistanceTo(p3y) < p2.sqrDistanceTo(p3)) {
-                p3 = p3y
+            {
+                const x3 = snap(p2.x, d.x)
+                const y3 = x3 * k + c
+                const p3x = Vector2(x3, y3)
+                p3 = p3x
             }
+
+            if (k !== 0) {
+                const y3 = snap(p2.y, d.y)
+                const x3 = (y3 - c) / k
+                const p3y = Vector2(x3, y3)
+                if (p2.sqrDistanceTo(p3y) < p2.sqrDistanceTo(p3)) {
+                    p3 = p3y
+                }
+            }
+        } else {
+            const y3 = snap(p2.y, d.y)
+            const x3 = p2.x
+            p3 = Vector2(x3, y3)
         }
-    } else {
-        const y3 = snap(p2.y, d.y)
-        const x3 = p2.x
-        p3 = Vector2(x3, y3)
+
+        return p3
     }
 
-    return p3
-}
-
-function getHittingCellPos(p1: Vector2, p2: Vector2): Vector2 {
-    const d = p2.subtract(p1)
-    return Vector2(Math.floor(p2.x + Math.sign(d.x) * EPS), Math.floor(p2.y + Math.sign(d.y) * EPS))
-}
-
-function snap(x: number, dx: number): number {
-    return dx > 0 ? Math.ceil(x + Math.sign(dx) * EPS) : dx < 0 ? Math.floor(x + Math.sign(dx) * EPS) : x
-}
-
-export function isPointInSceneBounds(scene: Scene, p: Vector2): boolean {
-    const size = scene.size()
-    return 0 <= p.x && p.x < size.x && 0 <= p.y && p.y < size.y
-}
-
-function castRay(scene: Scene, p1: Vector2, p2: Vector2): Vector2 {
-    const start = p1
-    while (start.sqrDistanceTo(p1) < FAR_CLIPPING_PLANE * FAR_CLIPPING_PLANE) {
-        const c = getHittingCellPos(p1, p2)
-        if (isPointInSceneBounds(scene, c) && scene.cells[c.y][c.x] !== null) break
-
-        const p3 = rayStep(p1, p2)
-
-        p1 = p2
-        p2 = p3
+    function getHittingCellPos(p1: Vector2, p2: Vector2): Vector2 {
+        const d = p2.subtract(p1)
+        return Vector2(Math.floor(p2.x + Math.sign(d.x) * EPS), Math.floor(p2.y + Math.sign(d.y) * EPS))
     }
 
-    return p2
+    function snap(x: number, dx: number): number {
+        return dx > 0 ? Math.ceil(x + Math.sign(dx) * EPS) : dx < 0 ? Math.floor(x + Math.sign(dx) * EPS) : x
+    }
+
+    function isPointInSceneBounds(p: Vector2): boolean {
+        const size = self.scene.size()
+        return 0 <= p.x && p.x < size.x && 0 <= p.y && p.y < size.y
+    }
+
+    function castRay(p1: Vector2, p2: Vector2): Vector2 {
+        const start = p1
+        while (start.sqrDistanceTo(p1) < FAR_CLIPPING_PLANE * FAR_CLIPPING_PLANE) {
+            const c = getHittingCellPos(p1, p2)
+            if (isPointInSceneBounds(c) && scene.cells[c.y][c.x] !== null) break
+
+            const p3 = rayStep(p1, p2)
+
+            p1 = p2
+            p2 = p3
+        }
+
+        return p2
+    }
+
+    return self
 }
