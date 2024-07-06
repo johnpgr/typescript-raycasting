@@ -1,34 +1,78 @@
-import { PLAYER_SIZE, PLAYER_TURN_SPEED } from "./consts.js"
-import { Color, Game, Minimap, PlayerEntity, Scene, Vector2 } from "./game.js"
-import { assert, loadImage } from "./utils.js"
+import { Vector2 } from "./consts.js"
+import { Display, Game, PlayerEntity, Scene } from "./game.js"
+import { assert, loadImageData } from "./utils.js"
 
-const [tsodinPog, tsodinFlushed, tsodinZezin, tsodinGasm, tf, typescript] = await Promise.all([
-    loadImage("assets/images/opengameart/wezu_tex_cc_by/wall1_color.png").catch(Color.magenta),
-    loadImage("assets/images/tsodinEmotes/tsodinFlushed.png").catch(Color.magenta),
-    loadImage("assets/images/tsodinEmotes/tsodinZezin.png").catch(Color.magenta),
-    loadImage("assets/images/tsodinEmotes/tsodinGasm.png").catch(Color.magenta),
-    loadImage("assets/images/tf.png").catch(Color.magenta),
-    loadImage("assets/images/Typescript_logo_2020.png").catch(Color.magenta),
+const [wall, key] = await Promise.all([
+    loadImageData("assets/images/custom/wall.png"),
+    loadImageData("assets/images/custom/key.png"),
 ])
 
 const scene = Scene([
-    [null, null, tf, typescript, null, null, null, null, null],
-    [null, null, null, tsodinZezin, null, null, null, null, null],
-    [null, tsodinGasm, tsodinFlushed, tsodinPog, null, null, null, null, null],
-    [null, null, null, null, null, null, null, null, null],
-    [null, null, null, null, null, null, null, null, null],
-    [null, null, null, null, null, null, null, null, null],
-    [null, null, null, null, null, null, null, null, null],
+    [null, null, wall, wall, wall, null, null],
+    [null, null, null, null, null, null, null],
+    [wall, null, null, null, null, null, null],
+    [wall, null, null, null, null, null, null],
+    [wall],
+    [null, null, null, null, null, null, null],
+    [null, null, null, null, null, null, null],
 ])
+
+const KEY_SCALE = 0.4
+const KEY_Z = KEY_SCALE
+
+const sprites = [
+    {
+        imageData: key,
+        position: new Vector2(2.5, 1.5),
+        z: KEY_Z,
+        scale: KEY_SCALE,
+
+        pdist: 0,
+        t: 0,
+    },
+    {
+        imageData: key,
+        position: new Vector2(3.0, 1.5),
+        z: KEY_Z,
+        scale: KEY_SCALE,
+
+        pdist: 0,
+        t: 0,
+    },
+    {
+        imageData: key,
+        position: new Vector2(3.5, 1.5),
+        z: KEY_Z,
+        scale: KEY_SCALE,
+
+        pdist: 0,
+        t: 0,
+    },
+    {
+        imageData: key,
+        position: new Vector2(4.0, 1.5),
+        z: KEY_Z,
+        scale: KEY_SCALE,
+
+        pdist: 0,
+        t: 0,
+    },
+    {
+        imageData: key,
+        position: new Vector2(4.5, 1.5),
+        z: KEY_Z,
+        scale: KEY_SCALE,
+
+        pdist: 0,
+        t: 0,
+    },
+]
 const canvas = document.getElementById("game") as HTMLCanvasElement | null
 assert(canvas !== null, "Canvas element not found")
-const player = PlayerEntity(Vector2.zero(), Math.PI * 1.25)
-const game = Game(canvas, scene, player, Minimap(Vector2.zero(), Vector2.zero()))
-// Init player position in the middle of the scene
-player.position = game.scene.size().multiply(Vector2(0.63, 0.63))
-// Init minimap position and size
-game.minimap.position = Vector2.zero().add(game.canvasSize().scale(0.02))
-game.minimap.size = game.scene.size().scale(game.canvas.width * 0.03)
+
+const display = Display(canvas)
+const player = PlayerEntity(new Vector2(), Math.PI * 1.25)
+const game = Game(canvas, display, scene, player, sprites)
 
 window.addEventListener("keydown", (e) => {
     switch (e.code) {
@@ -81,40 +125,13 @@ window.addEventListener("keyup", (e) => {
 
 let prevTimestamp = 0
 const frame = (timestamp: number) => {
-    const dt = (timestamp - prevTimestamp) / 1000
+    const deltaTime = (timestamp - prevTimestamp) / 1000
     prevTimestamp = timestamp
-    let velocity = Vector2.zero()
-    let angularVelocity = 0
-
-    if (player.movingForward) {
-        velocity = velocity.add(Vector2.fromAngle(player.direction).scale(player.movespeed))
-    }
-    if (player.movingBackward) {
-        velocity = velocity.subtract(Vector2.fromAngle(player.direction).scale(player.movespeed))
-    }
-    if (player.movingLeft) {
-        velocity = velocity.add(Vector2.fromAngle(player.direction - Math.PI / 2).scale(player.movespeed))
-    }
-    if (player.movingRight) {
-        velocity = velocity.add(Vector2.fromAngle(player.direction + Math.PI / 2).scale(player.movespeed))
-    }
-    if (player.turningLeft) {
-        angularVelocity -= PLAYER_TURN_SPEED
-    }
-    if (player.turningRight) {
-        angularVelocity += PLAYER_TURN_SPEED
-    }
-
-    player.direction = player.direction + angularVelocity * dt
-    const newPosition = player.position.add(velocity.scale(dt))
-    if (scene.canPlayerWalkTo(newPosition)) {
-        player.position = newPosition
-    }
-    game.render()
-    requestAnimationFrame(frame)
+    game.renderGame(deltaTime)
+    window.requestAnimationFrame(frame)
 }
 
-requestAnimationFrame((timestamp) => {
+window.requestAnimationFrame((timestamp) => {
     prevTimestamp = timestamp
-    frame(timestamp)
+    window.requestAnimationFrame(frame)
 })

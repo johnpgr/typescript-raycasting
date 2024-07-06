@@ -5,7 +5,7 @@ import { readdir } from "fs/promises"
 const [assets, dist, src] = await Promise.all([
     readdir("assets", { recursive: true }).then((a) => a.map((v) => "assets/" + v)),
     readdir("dist"),
-    readdir("src"),
+    readdir("src").then((a) => a.map((v) => "src/" + v)),
 ])
 
 function cmd(command: string, ...args: string[]) {
@@ -67,7 +67,7 @@ export const httpServer = (port: number) => {
                 }
                 // For when clicking in error stacktrace w/ the mapped source in the browser
                 else if (src.includes(path)) {
-                    const file = Bun.file(`./src/${path}`)
+                    const file = Bun.file(path)
 
                     // directory or binary file
                     if (file.type === "application/octet-stream") {

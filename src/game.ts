@@ -1,220 +1,30 @@
 import {
     PLAYER_SPEED,
     EPS,
-    FACTOR,
     FAR_CLIPPING_PLANE,
     PLAYER_FOV,
     NEAR_CLIPPING_PLANE,
     SCREEN_WIDTH,
-    PLAYER_SIZE,
+    SCENE_FLOOR1,
+    SCENE_FLOOR2,
+    SCENE_CEILING1,
+    SCENE_CEILING2,
+    MINIMAP_SCALE,
+    MINIMAP_PLAYER_SIZE,
+    MINIMAP_SPRITES,
+    SCREEN_HEIGHT,
+    MINIMAP_SPRITE_SIZE,
+    COS_OF_HALF_FOV,
+    PLAYER_TURN_SPEED,
+    Rgba,
+    Vector2,
 } from "./consts.js"
 import { assert } from "./utils.js"
 
-export interface Vector2 {
-    readonly x: number
-    readonly y: number
-
-    length(): number
-    sqrLength(): number
-    add(v: Vector2): Vector2
-    divide(v: Vector2): Vector2
-    subtract(v: Vector2): Vector2
-    multiply(v: Vector2): Vector2
-    scale(scalar: number): Vector2
-    distanceTo(v: Vector2): number
-    sqrDistanceTo(v: Vector2): number
-    rotate90(): Vector2
-    dotProduct(v: Vector2): number
-    interpolate(v: Vector2, t: number): Vector2
-    normalize(): Vector2
-    map(fn: (x: number) => number): Vector2
-    [Symbol.iterator](): IterableIterator<number>
-}
-
-export function Vector2(x: number, y: number): Vector2 {
-    const self: Vector2 = {
-        x,
-        y,
-        length,
-        sqrLength,
-        add,
-        divide,
-        subtract,
-        multiply,
-        scale,
-        distanceTo,
-        sqrDistanceTo,
-        rotate90,
-        dotProduct,
-        interpolate,
-        normalize,
-        map,
-        [Symbol.iterator]: iterate,
-    }
-
-    function length() {
-        return Math.sqrt(Math.pow(self.x, 2) + Math.pow(self.y, 2))
-    }
-
-    function sqrLength() {
-        return Math.pow(self.x, 2) + Math.pow(self.y, 2)
-    }
-
-    function normalize(): Vector2 {
-        if (self.length() === 0) {
-            return Vector2.zero()
-        }
-
-        return Vector2(self.x / self.length(), self.y / self.length())
-    }
-
-    function divide(v: Vector2): Vector2 {
-        return Vector2(self.x / v.x, self.y / v.y)
-    }
-
-    function add(v: Vector2): Vector2 {
-        return Vector2(self.x + v.x, self.y + v.y)
-    }
-
-    function subtract(v: Vector2): Vector2 {
-        return Vector2(self.x - v.x, self.y - v.y)
-    }
-
-    function multiply(v: Vector2): Vector2 {
-        return Vector2(self.x * v.x, self.y * v.y)
-    }
-
-    function scale(amount: number): Vector2 {
-        return Vector2(self.x * amount, self.y * amount)
-    }
-
-    function distanceTo(v: Vector2): number {
-        return self.subtract(v).length()
-    }
-
-    function sqrDistanceTo(v: Vector2): number {
-        return self.subtract(v).sqrLength()
-    }
-
-    function rotate90(): Vector2 {
-        return Vector2(-self.y, self.x)
-    }
-
-    function dotProduct(v: Vector2): number {
-        return self.x * v.x + self.y * v.y
-    }
-
-    function interpolate(v: Vector2, t: number): Vector2 {
-        return v.subtract(self).scale(t).add(self)
-    }
-
-    function map(fn: (x: number) => number): Vector2 {
-        return Vector2(fn(self.x), fn(self.y))
-    }
-
-    function* iterate() {
-        yield self.x
-        yield self.y
-    }
-
-    return self
-}
-
-export namespace Vector2 {
-    export function zero(): Vector2 {
-        return Vector2(0, 0)
-    }
-
-    export function scalar(value: number): Vector2 {
-        return Vector2(value, value)
-    }
-
-    export function fromAngle(angle: number): Vector2 {
-        return Vector2(Math.cos(angle), Math.sin(angle))
-    }
-}
-
-export interface Color {
-    readonly r: number
-    readonly g: number
-    readonly b: number
-    readonly a: number
-
-    brightness(factor: number): Color
-    toStyle(): string
-    [Symbol.iterator](): IterableIterator<number>
-}
-
-export function Color(r: number, g: number, b: number, a: number): Color {
-    const self: Color = {
-        r,
-        g,
-        b,
-        a,
-        brightness,
-        toStyle,
-        [Symbol.iterator]: iterate,
-    }
-
-    function brightness(factor: number): Color {
-        return Color(self.r * factor, self.g * factor, self.b * factor, self.a)
-    }
-
-    function toStyle(): string {
-        const r = Math.floor(self.r * 255)
-        const g = Math.floor(self.g * 255)
-        const b = Math.floor(self.b * 255)
-
-        return `rgba(${r}, ${g}, ${b}, ${self.a})`
-    }
-
-    function* iterate() {
-        yield self.r
-        yield self.g
-        yield self.b
-        yield self.a
-    }
-
-    return self
-}
-
-export namespace Color {
-    export function isColor(x: any): x is Color {
-        if ("r" in x && "g" in x && "b" in x && "a" in x) {
-            return true
-        }
-        return false
-    }
-    export function red(): Color {
-        return Color(1, 0, 0, 1)
-    }
-    export function blue(): Color {
-        return Color(0, 0, 1, 1)
-    }
-    export function green(): Color {
-        return Color(0, 1, 0, 1)
-    }
-    export function magenta(): Color {
-        return Color(1, 0, 1, 1)
-    }
-    export function yellow(): Color {
-        return Color(1, 1, 0, 1)
-    }
-    export function cyan(): Color {
-        return Color(0, 1, 1, 1)
-    }
-    export function white(): Color {
-        return Color(1, 1, 1, 1)
-    }
-    export function black(): Color {
-        return Color(0, 0, 0, 1)
-    }
-}
-
 export interface PlayerEntity {
     position: Vector2
+    velocity: Vector2
     direction: number
-    movespeed: number
     movingForward: boolean
     movingBackward: boolean
     movingLeft: boolean
@@ -225,11 +35,11 @@ export interface PlayerEntity {
     fovRange(): [Vector2, Vector2]
 }
 
-export function PlayerEntity(position: Vector2, direction: number): PlayerEntity {
+export function PlayerEntity(_position: Vector2, _direction: number): PlayerEntity {
     const self: PlayerEntity = {
-        position,
-        direction,
-        movespeed: PLAYER_SPEED,
+        position: _position,
+        velocity: new Vector2(),
+        direction: _direction,
         movingForward: false,
         movingBackward: false,
         turningLeft: false,
@@ -241,9 +51,10 @@ export function PlayerEntity(position: Vector2, direction: number): PlayerEntity
 
     function fovRange(): [Vector2, Vector2] {
         const l = Math.tan(PLAYER_FOV * 0.5) * NEAR_CLIPPING_PLANE
-        const p = self.position.add(Vector2.fromAngle(self.direction).scale(NEAR_CLIPPING_PLANE))
-        const p1 = p.subtract(p.subtract(self.position).rotate90().normalize().scale(l))
-        const p2 = p.add(p.subtract(self.position).rotate90().normalize().scale(l))
+        const p = new Vector2().setAngle(self.direction, NEAR_CLIPPING_PLANE).add(self.position)
+        const wing = p.clone().sub(self.position).rot90().norm().scale(l)
+        const p1 = p.clone().sub(wing)
+        const p2 = p.clone().add(wing)
 
         return [p1, p2]
     }
@@ -251,51 +62,92 @@ export function PlayerEntity(position: Vector2, direction: number): PlayerEntity
     return self
 }
 
-export type SceneCell = Color | HTMLImageElement | null
+export type Tile = Rgba | ImageData | null
 
 export interface Scene {
-    cells: SceneCell[][]
+    walls: Tile[]
     width: number
     height: number
 
     size(): Vector2
     contains(p: Vector2): boolean
-    get(p: Vector2): SceneCell | undefined
+    getTile(p: Vector2): Tile | undefined
+    getFloor(p: Vector2): Tile | undefined
+    getCeiling(p: Vector2): Tile | undefined
     isWall(p: Vector2): boolean
-    canPlayerWalkTo(newPlayerPos: Vector2): boolean
+    canRectangleFitHere(px: number, py: number, sx: number, sy: number): boolean
 }
 
-export function Scene(cells: SceneCell[][]): Scene {
-    const height = cells.length
-    const width = Math.max(...cells.map((row) => row.length))
+export function Scene(_walls: Tile[][]): Scene {
+    const height = _walls.length
 
-    const self: Scene = { cells, width, height, get, size, contains, isWall, canPlayerWalkTo }
+    let width = 0
+    for (const row of _walls) {
+        width = Math.max(width, row.length)
+    }
+
+    let walls: Tile[] = []
+    for (let row of _walls) {
+        walls = walls.concat(row)
+        for (let i = 0; i < width - row.length; ++i) {
+            walls.push(null)
+        }
+    }
+
+    const self: Scene = {
+        walls,
+        width,
+        height,
+        getTile,
+        size,
+        contains,
+        isWall,
+        canRectangleFitHere,
+        getFloor,
+        getCeiling,
+    }
 
     function size(): Vector2 {
-        return Vector2(self.width, self.height)
+        return new Vector2(self.width, self.height)
     }
 
     function contains(p: Vector2): boolean {
         return 0 <= p.x && p.x < self.width && 0 <= p.y && p.y < self.height
     }
 
-    function get(p: Vector2): SceneCell | undefined {
+    function getTile(p: Vector2): Tile | undefined {
         if (!self.contains(p)) return undefined
-        const fp = p.map(Math.floor)
+        return self.walls[Math.floor(p.y) * self.width + Math.floor(p.x)]
+    }
 
-        return self.cells[fp.y][fp.x]
+    function getFloor(p: Vector2): Tile | undefined {
+        if (((Math.floor(p.x) + Math.floor(p.y)) & 1) == 0) {
+            return SCENE_FLOOR1
+        } else {
+            return SCENE_FLOOR2
+        }
+    }
+
+    function getCeiling(p: Vector2): Tile | undefined {
+        if (((Math.floor(p.x) + Math.floor(p.y)) & 1) == 0) {
+            return SCENE_CEILING1
+        }
+        return SCENE_CEILING2
     }
 
     function isWall(p: Vector2): boolean {
-        const c = self.get(p)
+        const c = self.getTile(p)
         return c !== undefined && c !== null
     }
 
-    function canPlayerWalkTo(newPlayerPos: Vector2): boolean {
-        const corner = newPlayerPos.subtract(Vector2.scalar(PLAYER_SIZE * 0.5))
-        for (let dx = 0; dx < 2; dx++) {
-            for (let dy = 0; dy < 2; dy++) {
-                if (self.isWall(corner.add(Vector2(dx, dy).scale(PLAYER_SIZE)))) {
+    function canRectangleFitHere(px: number, py: number, sx: number, sy: number): boolean {
+        const x1 = Math.floor(px - sx * 0.5)
+        const x2 = Math.floor(px + sx * 0.5)
+        const y1 = Math.floor(py - sy * 0.5)
+        const y2 = Math.floor(py + sy * 0.5)
+        for (let x = x1; x <= x2; x++) {
+            for (let y = y1; y <= y2; y++) {
+                if (self.isWall(new Vector2(x, y))) {
                     return false
                 }
             }
@@ -306,222 +158,458 @@ export function Scene(cells: SceneCell[][]): Scene {
     return self
 }
 
-export interface Minimap {
-    size: Vector2
+export interface Sprite {
+    imageData: ImageData
     position: Vector2
+    z: number
+    scale: number
+    /**
+     * Player distance.
+     */
+    pdist: number
+    /**
+     * Normalized horizontal position on the screen
+     */
+    t: number
 }
 
-export function Minimap(size: Vector2, position: Vector2): Minimap {
-    const self = { size, position } as Minimap
+export function Sprite(_imageData: ImageData, _position: Vector2, _z: number, _scale: number): Sprite {
+    const self: Sprite = {
+        imageData: _imageData,
+        position: _position,
+        z: _z,
+        scale: _scale,
+        pdist: 0,
+        t: 0,
+    }
+
+    return self
+}
+
+export interface Display {
+    ctx: CanvasRenderingContext2D
+    backCtx: OffscreenCanvasRenderingContext2D
+    backImageData: ImageData
+    zBuffer: number[]
+
+    swapBackImageData(): void
+}
+export function Display(canvas: HTMLCanvasElement): Display {
+    const _ctx = canvas.getContext("2d")
+    assert(_ctx !== null, "2D not supported OMEGALUL")
+
+    const backCanvas = new OffscreenCanvas(SCREEN_WIDTH, SCREEN_HEIGHT)
+    const _backCtx = backCanvas.getContext("2d")
+    assert(_backCtx !== null, "2D not supported OMEGALUL")
+    _backCtx.imageSmoothingEnabled = false
+
+    const _backImageData = new ImageData(SCREEN_WIDTH, SCREEN_HEIGHT)
+    _backImageData.data.fill(255)
+
+    const _zBuffer = new Array(SCREEN_WIDTH).fill(0)
+
+    const self: Display = {
+        ctx: _ctx,
+        backCtx: _backCtx,
+        backImageData: _backImageData,
+        zBuffer: _zBuffer,
+        swapBackImageData,
+    }
+
+    function swapBackImageData(): void {
+        self.backCtx.putImageData(self.backImageData, 0, 0)
+        self.ctx.drawImage(self.backCtx.canvas, 0, 0, self.ctx.canvas.width, self.ctx.canvas.height)
+    }
 
     return self
 }
 
 export interface Game {
     canvas: HTMLCanvasElement
+    display: Display
     scene: Scene
-    ctx: CanvasRenderingContext2D
+    sprites: Sprite[]
     player: PlayerEntity
-    minimap: Minimap
 
-    canvasSize(): Vector2
-    render(): void
+    renderGame(deltaTime: number): void
 }
 
-export function Game(canvas: HTMLCanvasElement, scene: Scene, player: PlayerEntity, minimap: Minimap): Game {
-    const ctx = canvas.getContext("2d")
-    assert(ctx !== null, "2D not supported OMEGALUL")
-
+export function Game(
+    _canvas: HTMLCanvasElement,
+    _display: Display,
+    _scene: Scene,
+    _player: PlayerEntity,
+    _sprites: Sprite[],
+): Game {
     const self: Game = {
-        canvas,
-        scene,
-        ctx,
-        player,
-        minimap,
-        canvasSize,
-        render,
+        canvas: _canvas,
+        display: _display,
+        scene: _scene,
+        player: _player,
+        sprites: _sprites,
+        renderGame,
     }
 
-    self.canvas.width = 16 * FACTOR
-    self.canvas.height = 9 * FACTOR
+    const factor = 80
+    const visibleSprites: Sprite[] = []
+    const dts: number[] = []
 
-    function canvasSize() {
-        return Vector2(self.ctx.canvas.width, self.ctx.canvas.height)
-    }
+    self.canvas.width = 16 * factor
+    self.canvas.height = 9 * factor
+    self.player.position = self.scene.size().mul(new Vector2(0.63, 0.63))
 
-    function render() {
-        drawBackground("#181818")
-        renderScene()
+    function renderGame(deltaTime: number) {
+        self.player.velocity.setScalar(0)
+        let angularVelocity = 0.0
+
+        if (self.player.movingForward) {
+            self.player.velocity.add(new Vector2().setAngle(self.player.direction, PLAYER_SPEED))
+        }
+        if (self.player.movingBackward) {
+            self.player.velocity.sub(new Vector2().setAngle(self.player.direction, PLAYER_SPEED))
+        }
+        if (self.player.movingLeft) {
+            self.player.velocity.add(new Vector2().setAngle(self.player.direction - Math.PI / 2, PLAYER_SPEED))
+        }
+        if (self.player.movingRight) {
+            self.player.velocity.add(new Vector2().setAngle(self.player.direction + Math.PI / 2, PLAYER_SPEED))
+        }
+        if (self.player.turningLeft) {
+            angularVelocity -= PLAYER_TURN_SPEED
+        }
+        if (self.player.turningRight) {
+            angularVelocity += PLAYER_TURN_SPEED
+        }
+
+        self.player.direction = self.player.direction + angularVelocity * deltaTime
+        const nx = self.player.position.x + self.player.velocity.x * deltaTime
+        if (self.scene.canRectangleFitHere(nx, self.player.position.y, MINIMAP_PLAYER_SIZE, MINIMAP_PLAYER_SIZE)) {
+            self.player.position.x = nx
+        }
+        const ny = self.player.position.y + self.player.velocity.y * deltaTime
+        if (self.scene.canRectangleFitHere(self.player.position.x, ny, MINIMAP_PLAYER_SIZE, MINIMAP_PLAYER_SIZE)) {
+            self.player.position.y = ny
+        }
+
+        renderFloorAndCeiling()
+        renderWalls()
+        renderSprites()
+        self.display.swapBackImageData()
+
         renderMinimap()
+        renderFPS(deltaTime)
     }
 
-    function drawCircle(fillStyle: string, x: number, y: number, radius: number): void {
-        self.ctx.fillStyle = fillStyle
-        self.ctx.beginPath()
-        self.ctx.arc(x, y, radius, 0, Math.PI * 2)
-        self.ctx.fill()
+    function drawText(fillStyle: string, font: string, text: string, x: number, y: number): void {
+        self.display.ctx.fillStyle = fillStyle
+        self.display.ctx.font = font
+        self.display.ctx.fillText(text, x, y)
     }
 
-    function drawLine(p1: Vector2, p2: Vector2, strokeStyle: string, lineWidth: number): void {
-        self.ctx.strokeStyle = strokeStyle
-        self.ctx.lineWidth = lineWidth
-        self.ctx.beginPath()
-        //@ts-ignore
-        self.ctx.moveTo(...p1)
-        //@ts-ignore
-        self.ctx.lineTo(...p2)
-        self.ctx.stroke()
+    function drawLine(strokeStyle: string, p1: Vector2, p2: Vector2, lineWidth: number): void {
+        self.display.ctx.strokeStyle = strokeStyle
+        self.display.ctx.lineWidth = lineWidth
+        self.display.ctx.beginPath()
+        self.display.ctx.moveTo(p1.x, p1.y)
+        self.display.ctx.lineTo(p2.x, p2.y)
+        self.display.ctx.stroke()
     }
 
     function drawRect(color: string, x: number, y: number, w: number, h: number): void {
-        self.ctx.fillStyle = color
-        self.ctx.fillRect(x, y, w, h)
+        self.display.ctx.fillStyle = color
+        self.display.ctx.fillRect(x, y, w, h)
     }
 
-    function drawBackground(fillStyle: string): void {
-        self.ctx.fillStyle = fillStyle
-        self.ctx.fillRect(0, 0, self.canvas.width, self.canvas.height)
-    }
-
-    function drawMinimapGrid(strokeStyle: string, lineWidth: number): void {
-        for (let x = 0; x <= self.scene.size().x; x++) {
-            drawLine(Vector2(x, 0), Vector2(x, self.scene.size().y), strokeStyle, lineWidth)
+    function drawMinimapGrid(gridSize: Vector2, strokeStyle: string, lineWidth: number): void {
+        for (let x = 0; x <= gridSize.x; x++) {
+            drawLine(strokeStyle, new Vector2(x, 0), new Vector2(x, gridSize.y), lineWidth)
         }
 
-        for (let y = 0; y <= self.scene.size().y; y++) {
-            drawLine(Vector2(0, y), Vector2(self.scene.size().x, y), strokeStyle, lineWidth)
+        for (let y = 0; y <= gridSize.y; y++) {
+            drawLine(strokeStyle, new Vector2(0, y), new Vector2(gridSize.x, y), lineWidth)
         }
     }
 
-    function drawMinimapWalls(): void {
-        for (let y = 0; y < self.scene.size().y; y++) {
-            for (let x = 0; x < self.scene.size().x; x++) {
-                const cell = self.scene.get(Vector2(x, y))
-                if (cell) {
-                    if (cell instanceof HTMLImageElement) {
-                        self.ctx.drawImage(cell, x, y, 1, 1)
-                    } else {
-                        drawRect(cell.toStyle(), x, y, 1, 1)
-                    }
+    function drawMinimapWalls(gridSize: Vector2): void {
+        for (let y = 0; y < gridSize.y; y++) {
+            for (let x = 0; x < gridSize.x; x++) {
+                const cell = self.scene.getTile(new Vector2(x, y))
+                if (cell instanceof Rgba) {
+                    drawRect(cell.toStyle(), x, y, 1, 1)
+                } else if (cell instanceof ImageData) {
+                    drawRect("blue", x, y, 1, 1)
                 }
             }
         }
     }
 
     function renderMinimap(): void {
-        self.ctx.save()
+        self.display.ctx.save()
 
+        const cellSize = self.canvas.width * MINIMAP_SCALE
         const gridSize = self.scene.size()
 
-        // @ts-ignore
-        self.ctx.translate(...self.minimap.position)
-        // @ts-ignore
-        self.ctx.scale(...self.minimap.size.divide(gridSize))
-        // @ts-ignore
-        drawRect("#181818", 0, 0, ...gridSize)
-        drawMinimapWalls()
-        drawMinimapGrid("#303030", 0.05)
+        self.display.ctx.translate(self.canvas.width * MINIMAP_SCALE, self.canvas.height * MINIMAP_SCALE)
+        self.display.ctx.scale(cellSize, cellSize)
+        drawRect("#181818", 0, 0, gridSize.x, gridSize.y)
+        drawMinimapWalls(gridSize)
+        drawMinimapGrid(gridSize, "#303030", 0.05)
         drawRect(
             "magenta",
-            //@ts-ignore
-            ...self.player.position.subtract(Vector2(PLAYER_SIZE * 0.5, PLAYER_SIZE * 0.5)),
-            PLAYER_SIZE,
-            PLAYER_SIZE,
+            self.player.position.x - MINIMAP_PLAYER_SIZE * 0.5,
+            self.player.position.y - MINIMAP_PLAYER_SIZE * 0.5,
+            MINIMAP_PLAYER_SIZE,
+            MINIMAP_PLAYER_SIZE,
         )
 
         const [p1, p2] = self.player.fovRange()
-        drawLine(p1, p2, "magenta", 0.1)
-        drawLine(self.player.position, p1, "magenta", 0.1)
-        drawLine(self.player.position, p2, "magenta", 0.1)
-        self.ctx.restore()
+        drawLine("magenta", p1, p2, 0.05)
+        drawLine("magenta", self.player.position, p1, 0.05)
+        drawLine("magenta", self.player.position, p2, 0.05)
+
+        if (MINIMAP_SPRITES) {
+            const sp = new Vector2()
+            const dir = new Vector2().setAngle(self.player.direction)
+            drawLine("yellow", self.player.position, self.player.position.clone().add(dir), 0.05)
+
+            for (let sprite of self.sprites) {
+                drawRect(
+                    "red",
+                    sprite.position.x - MINIMAP_SPRITE_SIZE * 0.5,
+                    sprite.position.y - MINIMAP_SPRITE_SIZE * 0.5,
+                    MINIMAP_SPRITE_SIZE,
+                    MINIMAP_SPRITE_SIZE,
+                )
+
+                // TODO: deduplicate code between here and renderSprites()
+                // This code is important for trouble shooting anything related to projecting sprites
+                sp.copy(sprite.position).sub(self.player.position)
+                drawLine("red", self.player.position, self.player.position.clone().add(sp), 0.005)
+                const spl = sp.length()
+                if (spl <= NEAR_CLIPPING_PLANE) continue // Sprite is too close
+                if (spl >= FAR_CLIPPING_PLANE) continue // Sprite is too far
+                const dot = sp.dot(dir) / spl
+                drawText("white", "0.5px bold", String(dot), self.player.position.x, self.player.position.y)
+                if (!(COS_OF_HALF_FOV <= dot)) continue
+                const dist = NEAR_CLIPPING_PLANE / dot
+                sp.norm().scale(dist).add(self.player.position)
+                drawRect(
+                    "white",
+                    sp.x - MINIMAP_SPRITE_SIZE * 0.5,
+                    sp.y - MINIMAP_SPRITE_SIZE * 0.5,
+                    MINIMAP_SPRITE_SIZE,
+                    MINIMAP_SPRITE_SIZE,
+                )
+            }
+        }
+
+        self.display.ctx.restore()
     }
 
-    function renderScene(): void {
-        const stripWidth = Math.ceil(self.ctx.canvas.width / SCREEN_WIDTH)
-        const [r1, r2] = self.player.fovRange()
+    function calculateSpriteVisibility(sprite: Sprite): void {
+        const sp = new Vector2()
+        const dir = new Vector2().setAngle(self.player.direction)
+        const [p1, p2] = self.player.fovRange()
+        sp.copy(sprite.position).sub(self.player.position)
+        const spl = sp.length()
+        if (spl <= NEAR_CLIPPING_PLANE) return
+        if (spl >= FAR_CLIPPING_PLANE) return
 
-        for (let x = 0; x < SCREEN_WIDTH; x++) {
-            const p = castRay(self.player.position, r1.interpolate(r2, x / SCREEN_WIDTH))
-            const c = hittingCell(self.player.position, p)
+        const dot = sp.dot(dir) / spl
+        // TODO: allow sprites to be slightly outside of FOV to make their edges visible
+        if (!(COS_OF_HALF_FOV <= dot)) return
+        const dist = NEAR_CLIPPING_PLANE / dot
+        sp.norm().scale(dist).add(self.player.position)
+        sprite.t = p1.distanceTo(sp) / p1.distanceTo(p2)
+        sprite.pdist = sprite.position.clone().sub(self.player.position).dot(dir)
 
-            if (scene.contains(c)) {
-                const cell = self.scene.get(c)
+        // TODO: I'm not sure if these checks are necessary considering the `spl <= NEAR_CLIPPING_PLANE` above
+        if (sprite.pdist < NEAR_CLIPPING_PLANE) return
+        if (sprite.pdist >= FAR_CLIPPING_PLANE) return
 
-                if (cell) {
-                    const v = p.subtract(self.player.position)
-                    const d = Vector2.fromAngle(self.player.direction)
-                    const stripHeight = self.canvas.height / v.dotProduct(d)
+        visibleSprites.push(sprite)
+    }
 
-                    if (cell instanceof HTMLImageElement) {
-                        const t = p.subtract(c)
-                        let u = 0
+    function drawSprite(sprite: Sprite): void {
+        const cx = self.display.backImageData.width * sprite.t
+        const cy = self.display.backImageData.height * 0.5
+        const maxSpriteSize = self.display.backImageData.height / sprite.pdist
+        const spriteSize = maxSpriteSize * sprite.scale
+        const x1 = Math.floor(cx - spriteSize * 0.5)
+        const x2 = Math.floor(x1 + spriteSize - 1)
+        const bx1 = Math.max(0, x1)
+        const bx2 = Math.min(self.display.backImageData.width - 1, x2)
+        const y1 = Math.floor(cy + maxSpriteSize * 0.5 - maxSpriteSize * sprite.z)
+        const y2 = Math.floor(y1 + spriteSize - 1)
+        const by1 = Math.max(0, y1)
+        const by2 = Math.min(self.display.backImageData.height - 1, y2)
 
-                        if ((Math.abs(t.x) < EPS || Math.abs(t.x - 1) < EPS) && t.y > 0) {
-                            u = t.y
-                        } else {
-                            u = t.x
-                        }
+        const src = sprite.imageData.data
+        const dest = self.display.backImageData.data
 
-                        self.ctx.drawImage(
-                            cell,
-                            u * cell.width,
-                            0,
-                            1,
-                            cell.height,
-                            x * stripWidth,
-                            (self.canvas.height - stripHeight) * 0.5,
-                            stripWidth,
-                            stripHeight,
-                        )
-                    } else {
-                        drawRect(
-                            cell.brightness(1 / v.dotProduct(d)).toStyle(),
-                            x * stripWidth,
-                            (self.canvas.height - stripHeight) * 0.5,
-                            stripWidth,
-                            stripHeight,
-                        )
-                    }
+        for (let x = bx1; x <= bx2; x++) {
+            if (sprite.pdist < self.display.zBuffer[x]) {
+                for (let y = by1; y <= by2; y++) {
+                    const tx = Math.floor(((x - x1) / spriteSize) * sprite.imageData.width)
+                    const ty = Math.floor(((y - y1) / spriteSize) * sprite.imageData.height)
+                    const srcP = (ty * sprite.imageData.width + tx) * 4
+                    const destP = (y * self.display.backImageData.width + x) * 4
+                    const alpha = src[srcP + 3] / 255
+                    dest[destP + 0] = dest[destP + 0] * (1 - alpha) + src[srcP + 0] * alpha
+                    dest[destP + 1] = dest[destP + 1] * (1 - alpha) + src[srcP + 1] * alpha
+                    dest[destP + 2] = dest[destP + 2] * (1 - alpha) + src[srcP + 2] * alpha
                 }
             }
         }
     }
 
-    function rayStep(p1: Vector2, p2: Vector2): Vector2 {
-        const d = p2.subtract(p1)
-        let p3 = p2
+    function renderSprites(): void {
+        visibleSprites.length = 0
+        self.sprites.forEach(calculateSpriteVisibility)
 
-        if (d.x !== 0) {
-            const k = d.y / d.x
+        visibleSprites.sort((a, b) => b.pdist - a.pdist)
+        visibleSprites.forEach(drawSprite)
+    }
+
+    function renderFloorAndCeiling(): void {
+        const imageData = self.display.backImageData
+        const pz = imageData.height / 2
+        const [p1, p2] = self.player.fovRange()
+        const bp = p1.clone().sub(self.player.position).length()
+        for (let y = Math.floor(imageData.height / 2); y < imageData.height; y++) {
+            const sz = imageData.height - y - 1
+
+            const ap = pz - sz
+            const b = ((bp / ap) * pz) / NEAR_CLIPPING_PLANE
+            const t1 = self.player.position.clone().add(p1.clone().sub(self.player.position).norm().scale(b))
+            const t2 = self.player.position.clone().add(p2.clone().sub(self.player.position).norm().scale(b))
+
+            // TODO: render rows up until FAR_CLIPPING_PLANE
+
+            for (let x = 0; x < imageData.width; ++x) {
+                const t = t1.clone().lerp(t2, x / imageData.width)
+                const floorTile = self.scene.getFloor(t)
+                if (floorTile instanceof Rgba) {
+                    const shadow = self.player.position.distanceTo(t)
+                    const destP = (y * imageData.width + x) * 4
+                    imageData.data[destP + 0] = floorTile.r * shadow * 255
+                    imageData.data[destP + 1] = floorTile.g * shadow * 255
+                    imageData.data[destP + 2] = floorTile.b * shadow * 255
+                }
+                const ceilingTile = self.scene.getCeiling(t)
+                if (ceilingTile instanceof Rgba) {
+                    const shadow = self.player.position.distanceTo(t)
+                    const destP = (sz * imageData.width + x) * 4
+                    imageData.data[destP + 0] = ceilingTile.r * shadow * 255
+                    imageData.data[destP + 1] = ceilingTile.g * shadow * 255
+                    imageData.data[destP + 2] = ceilingTile.b * shadow * 255
+                }
+            }
+        }
+    }
+
+    function renderWalls(): void {
+        const [r1, r2] = self.player.fovRange()
+        const d = new Vector2().setAngle(self.player.direction)
+        for (let x = 0; x < self.display.backImageData.width; x++) {
+            const p = castRay(self.player.position, r1.clone().lerp(r2, x / self.display.backImageData.width))
+            const c = hittingCell(self.player.position, p)
+            const cell = self.scene.getTile(c)
+            const v = p.clone().sub(self.player.position)
+            self.display.zBuffer[x] = v.dot(d)
+            if (cell instanceof Rgba) {
+                const stripHeight = self.display.backImageData.height / self.display.zBuffer[x]
+                const shadow = (1 / self.display.zBuffer[x]) * 2
+                for (let dy = 0; dy < Math.ceil(stripHeight); dy++) {
+                    const y = Math.floor((self.display.backImageData.height - stripHeight) * 0.5) + dy
+                    const destP = (y * self.display.backImageData.width + x) * 4
+                    self.display.backImageData.data[destP + 0] = cell.r * shadow * 255
+                    self.display.backImageData.data[destP + 1] = cell.g * shadow * 255
+                    self.display.backImageData.data[destP + 2] = cell.b * shadow * 255
+                }
+            } else if (cell instanceof ImageData) {
+                const stripHeight = self.display.backImageData.height / self.display.zBuffer[x]
+                let u = 0
+                const t = p.clone().sub(c)
+                if (Math.abs(t.x) < EPS && t.y > 0) {
+                    u = t.y
+                } else if (Math.abs(t.x - 1) < EPS && t.y > 0) {
+                    u = 1 - t.y
+                } else if (Math.abs(t.y) < EPS && t.x > 0) {
+                    u = 1 - t.x
+                } else {
+                    u = t.x
+                }
+
+                const y1 = Math.floor((self.display.backImageData.height - stripHeight) * 0.5)
+                const y2 = Math.floor(y1 + stripHeight)
+                const by1 = Math.max(0, y1)
+                const by2 = Math.min(self.display.backImageData.height - 1, y2)
+                const tx = Math.floor(u * cell.width)
+                const sh = (1 / Math.ceil(stripHeight)) * cell.height
+                const shadow = Math.min((1 / self.display.zBuffer[x]) * 4, 1)
+                for (let y = by1; y <= by2; y++) {
+                    const ty = Math.floor((y - y1) * sh)
+                    const destP = (y * self.display.backImageData.width + x) * 4
+                    const srcP = (ty * cell.width + tx) * 4
+                    self.display.backImageData.data[destP + 0] = cell.data[srcP + 0] * shadow
+                    self.display.backImageData.data[destP + 1] = cell.data[srcP + 1] * shadow
+                    self.display.backImageData.data[destP + 2] = cell.data[srcP + 2] * shadow
+                }
+            }
+        }
+    }
+
+    function renderFPS(deltaTime: number): void {
+        dts.push(deltaTime)
+        // can be any number of frames
+        if (dts.length > 60) dts.shift()
+
+        let dtAvg = 0
+        for (const dt of dts) {
+            dtAvg += dt
+        }
+        dtAvg /= dts.length
+
+        drawText("white", "48px bold", String(Math.floor(1 / dtAvg)), 100, 100)
+    }
+
+    function rayStep(p1: Vector2, p2: Vector2): Vector2 {
+        let p3 = p2
+        const dx = p2.x - p1.x
+        const dy = p2.y - p1.y
+
+        if (dx !== 0) {
+            const k = dy / dx
             const c = p1.y - k * p1.x
 
             {
-                const x3 = snap(p2.x, d.x)
+                const x3 = snap(p2.x, dx)
                 const y3 = x3 * k + c
-                const p3x = Vector2(x3, y3)
-                p3 = p3x
+                p3 = new Vector2(x3, y3)
             }
 
             if (k !== 0) {
-                const y3 = snap(p2.y, d.y)
+                const y3 = snap(p2.y, dy)
                 const x3 = (y3 - c) / k
-                const p3y = Vector2(x3, y3)
-                if (p2.sqrDistanceTo(p3y) < p2.sqrDistanceTo(p3)) {
-                    p3 = p3y
+                const p3t = new Vector2(x3, y3)
+                if (p2.sqrDistanceTo(p3t) < p2.sqrDistanceTo(p3)) {
+                    p3 = p3t
                 }
             }
         } else {
-            const y3 = snap(p2.y, d.y)
+            const y3 = snap(p2.y, dy)
             const x3 = p2.x
-            p3 = Vector2(x3, y3)
+            p3 = new Vector2(x3, y3)
         }
 
         return p3
     }
 
     function hittingCell(p1: Vector2, p2: Vector2): Vector2 {
-        const d = p2.subtract(p1)
-        return Vector2(Math.floor(p2.x + Math.sign(d.x) * EPS), Math.floor(p2.y + Math.sign(d.y) * EPS))
+        const dx = p2.x - p1.x
+        const dy = p2.y - p1.y
+        return new Vector2(Math.floor(p2.x + Math.sign(dx) * EPS), Math.floor(p2.y + Math.sign(dy) * EPS))
     }
 
     function snap(x: number, dx: number): number {
@@ -532,7 +620,7 @@ export function Game(canvas: HTMLCanvasElement, scene: Scene, player: PlayerEnti
         const start = p1
         while (start.sqrDistanceTo(p1) < FAR_CLIPPING_PLANE * FAR_CLIPPING_PLANE) {
             const c = hittingCell(p1, p2)
-            if (self.scene.get(c)) break
+            if (self.scene.isWall(c)) break
             const p3 = rayStep(p1, p2)
 
             p1 = p2
