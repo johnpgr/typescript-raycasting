@@ -1,4 +1,4 @@
-import { DEFAULT_TURN_SPEED } from "./consts.js"
+import { PLAYER_SIZE, PLAYER_TURN_SPEED } from "./consts.js"
 import { Color, Game, Minimap, PlayerEntity, Scene, Vector2 } from "./game.js"
 import { assert, loadImage } from "./utils.js"
 
@@ -99,17 +99,16 @@ const frame = (timestamp: number) => {
         velocity = velocity.add(Vector2.fromAngle(player.direction + Math.PI / 2).scale(player.movespeed))
     }
     if (player.turningLeft) {
-        angularVelocity -= DEFAULT_TURN_SPEED
+        angularVelocity -= PLAYER_TURN_SPEED
     }
     if (player.turningRight) {
-        angularVelocity += DEFAULT_TURN_SPEED
+        angularVelocity += PLAYER_TURN_SPEED
     }
 
     player.direction = player.direction + angularVelocity * dt
     const newPosition = player.position.add(velocity.scale(dt))
-    const cell = scene.get(newPosition)
-    if (!cell) {
-        player.position = newPosition // Move only if there's no walls in the new position
+    if (scene.canPlayerWalkTo(newPosition)) {
+        player.position = newPosition
     }
     game.render()
     requestAnimationFrame(frame)

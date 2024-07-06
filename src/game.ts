@@ -1,4 +1,13 @@
-import { DEFAULT_MOVESPEED, EPS, FACTOR, FAR_CLIPPING_PLANE, FOV, NEAR_CLIPPING_PLANE, SCREEN_WIDTH } from "./consts.js"
+import {
+    PLAYER_SPEED,
+    EPS,
+    FACTOR,
+    FAR_CLIPPING_PLANE,
+    PLAYER_FOV,
+    NEAR_CLIPPING_PLANE,
+    SCREEN_WIDTH,
+    PLAYER_SIZE,
+} from "./consts.js"
 import { assert } from "./utils.js"
 
 export interface Vector2 {
@@ -116,6 +125,10 @@ export namespace Vector2 {
         return Vector2(0, 0)
     }
 
+    export function scalar(value: number): Vector2 {
+        return Vector2(value, value)
+    }
+
     export function fromAngle(angle: number): Vector2 {
         return Vector2(Math.cos(angle), Math.sin(angle))
     }
@@ -216,7 +229,7 @@ export function PlayerEntity(position: Vector2, direction: number): PlayerEntity
     const self: PlayerEntity = {
         position,
         direction,
-        movespeed: DEFAULT_MOVESPEED,
+        movespeed: PLAYER_SPEED,
         movingForward: false,
         movingBackward: false,
         turningLeft: false,
@@ -227,7 +240,7 @@ export function PlayerEntity(position: Vector2, direction: number): PlayerEntity
     }
 
     function fovRange(): [Vector2, Vector2] {
-        const l = Math.tan(FOV * 0.5) * NEAR_CLIPPING_PLANE
+        const l = Math.tan(PLAYER_FOV * 0.5) * NEAR_CLIPPING_PLANE
         const p = self.position.add(Vector2.fromAngle(self.direction).scale(NEAR_CLIPPING_PLANE))
         const p1 = p.subtract(p.subtract(self.position).rotate90().normalize().scale(l))
         const p2 = p.add(p.subtract(self.position).rotate90().normalize().scale(l))
@@ -246,29 +259,48 @@ export interface Scene {
     height: number
 
     size(): Vector2
-    contains(v: Vector2): boolean
-    get(v: Vector2): SceneCell | undefined
+    contains(p: Vector2): boolean
+    get(p: Vector2): SceneCell | undefined
+    isWall(p: Vector2): boolean
+    canPlayerWalkTo(newPlayerPos: Vector2): boolean
 }
 
 export function Scene(cells: SceneCell[][]): Scene {
     const height = cells.length
     const width = Math.max(...cells.map((row) => row.length))
 
-    const self: Scene = { cells, width, height, get, size, contains }
+    const self: Scene = { cells, width, height, get, size, contains, isWall, canPlayerWalkTo }
 
     function size(): Vector2 {
         return Vector2(self.width, self.height)
     }
 
-    function contains(v: Vector2): boolean {
-        return 0 <= v.x && v.x < self.width && 0 <= v.y && v.y < self.height
+    function contains(p: Vector2): boolean {
+        return 0 <= p.x && p.x < self.width && 0 <= p.y && p.y < self.height
     }
 
-    function get(v: Vector2): SceneCell | undefined {
-        if (!self.contains(v)) return undefined
-        const fp = v.map(Math.floor)
+    function get(p: Vector2): SceneCell | undefined {
+        if (!self.contains(p)) return undefined
+        const fp = p.map(Math.floor)
 
         return self.cells[fp.y][fp.x]
+    }
+
+    function isWall(p: Vector2): boolean {
+        const c = self.get(p)
+        return c !== undefined && c !== null
+    }
+
+    function canPlayerWalkTo(newPlayerPos: Vector2): boolean {
+        const corner = newPlayerPos.subtract(Vector2.scalar(PLAYER_SIZE * 0.5))
+        for (let dx = 0; dx < 2; dx++) {
+            for (let dy = 0; dy < 2; dy++) {
+                if (self.isWall(corner.add(Vector2(dx, dy).scale(PLAYER_SIZE)))) {
+                    return false
+                }
+            }
+        }
+        return true
     }
 
     return self
@@ -323,11 +355,10 @@ export function Game(canvas: HTMLCanvasElement, scene: Scene, player: PlayerEnti
         renderMinimap()
     }
 
-    function drawCircle(p: Vector2, fillStyle: string, radius: number): void {
+    function drawCircle(fillStyle: string, x: number, y: number, radius: number): void {
         self.ctx.fillStyle = fillStyle
         self.ctx.beginPath()
-        //@ts-ignore
-        self.ctx.arc(...p, radius, 0, Math.PI * 2)
+        self.ctx.arc(x, y, radius, 0, Math.PI * 2)
         self.ctx.fill()
     }
 
@@ -390,7 +421,13 @@ export function Game(canvas: HTMLCanvasElement, scene: Scene, player: PlayerEnti
         drawRect("#181818", 0, 0, ...gridSize)
         drawMinimapWalls()
         drawMinimapGrid("#303030", 0.05)
-        drawCircle(self.player.position, "magenta", 0.2)
+        drawRect(
+            "magenta",
+            //@ts-ignore
+            ...self.player.position.subtract(Vector2(PLAYER_SIZE * 0.5, PLAYER_SIZE * 0.5)),
+            PLAYER_SIZE,
+            PLAYER_SIZE,
+        )
 
         const [p1, p2] = self.player.fovRange()
         drawLine(p1, p2, "magenta", 0.1)
