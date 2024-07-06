@@ -1,3 +1,7 @@
+export function unreachable(msg: string): never {
+    throw new Error(msg)
+}
+
 export function assert(condition: boolean, message?: string): asserts condition {
     if (!condition) {
         throw new Error(message)

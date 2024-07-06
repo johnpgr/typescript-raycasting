@@ -1,6 +1,8 @@
 // @ts-ignore
 import index from "./src/index.html" with { type: "text" }
+import { ServerWebSocket } from "bun"
 import { readdir } from "fs/promises"
+import { watchFile } from "fs"
 
 const [assets, dist, src] = await Promise.all([
     readdir("assets", { recursive: true }).then((a) => a.map((v) => "assets/" + v)),
@@ -113,7 +115,9 @@ export const httpServer = (port: number) => {
 }
 
 export const wsServer = (port: number) => {
-    const server = Bun.serve<{ authToken: string }>({
+    const sockets = new Set<ServerWebSocket<unknown>>()
+
+    const server = Bun.serve({
         port,
         fetch(req, server) {
             const success = server.upgrade(req)
@@ -128,10 +132,16 @@ export const wsServer = (port: number) => {
             return new Response("Hello world!")
         },
         websocket: {
-            // this is called when a message is received
+            open(ws) {
+                console.log(`connection opened: ${ws.remoteAddress}`)
+                sockets.add(ws)
+            },
+            close(ws, code, reason) {
+                console.log(`connection closed: ${ws.remoteAddress} code: ${code} reason: ${reason}`)
+                sockets.delete(ws)
+            },
             async message(ws, message) {
-                console.log(`Received ${message}`)
-                // send back a message
+                console.log(`Received ${message} from ${ws.remoteAddress}`)
                 ws.send(`You said: ${message}`)
             },
         },
@@ -139,9 +149,25 @@ export const wsServer = (port: number) => {
 
     console.log(`WSS: Listening on ${server.hostname}:${server.port}`)
 
-    return server
+    return [server, sockets] as const
 }
 
+const [, sockets] = wsServer(3001)
 httpServer(3000)
-// wsServer(3001)
 cmd("tsc", "--sourceMap", "-w")
+
+const COLD_RELOAD_FILES = ["index.ts", "index.html", "consts.ts", "utils.ts"]
+const HOT_RELOAD_FILES = ["game.ts"]
+
+COLD_RELOAD_FILES.forEach((file) => {
+    watchFile(`src/${file}`, { interval: 50 }, () => {
+        console.log("Cold reloading")
+        sockets.forEach((ws) => ws.send("cold"))
+    })
+})
+HOT_RELOAD_FILES.forEach((file) => {
+    watchFile(`src/${file}`, { interval: 50 }, () => {
+        console.log("Hot reloading")
+        sockets.forEach((ws) => ws.send("hot"))
+    })
+})

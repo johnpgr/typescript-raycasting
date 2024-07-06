@@ -1,13 +1,14 @@
 import { Vector2 } from "./consts.js"
-import { Display, Game, PlayerEntity, Scene } from "./game.js"
 import { assert, loadImageData } from "./utils.js"
+
+let game = await import("./game.js")
 
 const [wall, key] = await Promise.all([
     loadImageData("assets/images/custom/wall.png"),
     loadImageData("assets/images/custom/key.png"),
 ])
 
-const scene = Scene([
+const scene = new game.Scene([
     [null, null, wall, wall, wall, null, null],
     [null, null, null, null, null, null, null],
     [wall, null, null, null, null, null, null],
@@ -67,12 +68,27 @@ const sprites = [
         t: 0,
     },
 ]
+
 const canvas = document.getElementById("game") as HTMLCanvasElement | null
 assert(canvas !== null, "Canvas element not found")
+const display = new game.Display(canvas)
+const player = new game.Player(new Vector2(), Math.PI * 1.25)
+const gameState = new game.GameState(canvas, display, scene, player, sprites)
+let gameRenderer = new game.GameRenderer(gameState)
 
-const display = Display(canvas)
-const player = PlayerEntity(new Vector2(), Math.PI * 1.25)
-const game = Game(canvas, display, scene, player, sprites)
+const isDev = window.location.hostname === "localhost"
+if (isDev) {
+    const ws = new WebSocket("ws://localhost:3001")
+    ws.addEventListener("message", async (event) => {
+        if (event.data === "hot") {
+            console.log("Hot reloading module")
+            game = await import("./game.js?date=" + new Date().getTime())
+            gameRenderer = new game.GameRenderer(gameState)
+        } else if (event.data === "cold") {
+            window.location.reload()
+        }
+    })
+}
 
 window.addEventListener("keydown", (e) => {
     switch (e.code) {
@@ -127,7 +143,7 @@ let prevTimestamp = 0
 const frame = (timestamp: number) => {
     const deltaTime = (timestamp - prevTimestamp) / 1000
     prevTimestamp = timestamp
-    game.renderGame(deltaTime)
+    gameRenderer.renderGame(deltaTime)
     window.requestAnimationFrame(frame)
 }
 
