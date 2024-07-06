@@ -107,8 +107,8 @@ const frame = (timestamp: number) => {
 
     player.direction = player.direction + angularVelocity * dt
     const newPosition = player.position.add(velocity.scale(dt))
-    const newCellPosition = newPosition.map(Math.floor)
-    if (!(game.isPointInSceneBounds(newCellPosition) && scene.cells[newCellPosition.y][newCellPosition.x] !== null)) {
+    const cell = scene.get(newPosition)
+    if (!cell) {
         player.position = newPosition // Move only if there's no walls in the new position
     }
     game.render()

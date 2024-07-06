@@ -242,20 +242,33 @@ export type SceneCell = Color | HTMLImageElement | null
 
 export interface Scene {
     cells: SceneCell[][]
+    width: number
+    height: number
 
     size(): Vector2
+    contains(v: Vector2): boolean
+    get(v: Vector2): SceneCell | undefined
 }
 
-export function Scene(cells: SceneCell[][]) {
-    const self: Scene = { cells, size }
+export function Scene(cells: SceneCell[][]): Scene {
+    const height = cells.length
+    const width = Math.max(...cells.map((row) => row.length))
+
+    const self: Scene = { cells, width, height, get, size, contains }
 
     function size(): Vector2 {
-        const y = self.cells.length
-        let x = Number.MIN_VALUE
-        for (const row of self.cells) {
-            x = Math.max(x, row.length)
-        }
-        return Vector2(x, y)
+        return Vector2(self.width, self.height)
+    }
+
+    function contains(v: Vector2): boolean {
+        return 0 <= v.x && v.x < self.width && 0 <= v.y && v.y < self.height
+    }
+
+    function get(v: Vector2): SceneCell | undefined {
+        if (!self.contains(v)) return undefined
+        const fp = v.map(Math.floor)
+
+        return self.cells[fp.y][fp.x]
     }
 
     return self
@@ -280,7 +293,6 @@ export interface Game {
     minimap: Minimap
 
     canvasSize(): Vector2
-    isPointInSceneBounds: (p: Vector2) => boolean
     render(): void
 }
 
@@ -295,7 +307,6 @@ export function Game(canvas: HTMLCanvasElement, scene: Scene, player: PlayerEnti
         player,
         minimap,
         canvasSize,
-        isPointInSceneBounds,
         render,
     }
 
@@ -354,11 +365,11 @@ export function Game(canvas: HTMLCanvasElement, scene: Scene, player: PlayerEnti
     function drawMinimapWalls(): void {
         for (let y = 0; y < self.scene.size().y; y++) {
             for (let x = 0; x < self.scene.size().x; x++) {
-                const cell = self.scene.cells[y][x]
-                if (cell !== null) {
+                const cell = self.scene.get(Vector2(x, y))
+                if (cell) {
                     if (cell instanceof HTMLImageElement) {
                         self.ctx.drawImage(cell, x, y, 1, 1)
-                    } else if (Color.isColor(cell)) {
+                    } else {
                         drawRect(cell.toStyle(), x, y, 1, 1)
                     }
                 }
@@ -368,12 +379,15 @@ export function Game(canvas: HTMLCanvasElement, scene: Scene, player: PlayerEnti
 
     function renderMinimap(): void {
         self.ctx.save()
+
+        const gridSize = self.scene.size()
+
         // @ts-ignore
         self.ctx.translate(...self.minimap.position)
         // @ts-ignore
-        self.ctx.scale(...self.minimap.size.divide(self.scene.size()))
+        self.ctx.scale(...self.minimap.size.divide(gridSize))
         // @ts-ignore
-        drawRect("#181818", 0, 0, ...self.scene.size())
+        drawRect("#181818", 0, 0, ...gridSize)
         drawMinimapWalls()
         drawMinimapGrid("#303030", 0.05)
         drawCircle(self.player.position, "magenta", 0.2)
@@ -391,12 +405,12 @@ export function Game(canvas: HTMLCanvasElement, scene: Scene, player: PlayerEnti
 
         for (let x = 0; x < SCREEN_WIDTH; x++) {
             const p = castRay(self.player.position, r1.interpolate(r2, x / SCREEN_WIDTH))
-            const c = getHittingCellPos(self.player.position, p)
+            const c = hittingCell(self.player.position, p)
 
-            if (self.isPointInSceneBounds(c)) {
-                const cell = self.scene.cells[c.y][c.x]
+            if (scene.contains(c)) {
+                const cell = self.scene.get(c)
 
-                if (cell !== null) {
+                if (cell) {
                     const v = p.subtract(self.player.position)
                     const d = Vector2.fromAngle(self.player.direction)
                     const stripHeight = self.canvas.height / v.dotProduct(d)
@@ -422,7 +436,7 @@ export function Game(canvas: HTMLCanvasElement, scene: Scene, player: PlayerEnti
                             stripWidth,
                             stripHeight,
                         )
-                    } else if (Color.isColor(cell)) {
+                    } else {
                         drawRect(
                             cell.brightness(1 / v.dotProduct(d)).toStyle(),
                             x * stripWidth,
@@ -468,7 +482,7 @@ export function Game(canvas: HTMLCanvasElement, scene: Scene, player: PlayerEnti
         return p3
     }
 
-    function getHittingCellPos(p1: Vector2, p2: Vector2): Vector2 {
+    function hittingCell(p1: Vector2, p2: Vector2): Vector2 {
         const d = p2.subtract(p1)
         return Vector2(Math.floor(p2.x + Math.sign(d.x) * EPS), Math.floor(p2.y + Math.sign(d.y) * EPS))
     }
@@ -477,17 +491,11 @@ export function Game(canvas: HTMLCanvasElement, scene: Scene, player: PlayerEnti
         return dx > 0 ? Math.ceil(x + Math.sign(dx) * EPS) : dx < 0 ? Math.floor(x + Math.sign(dx) * EPS) : x
     }
 
-    function isPointInSceneBounds(p: Vector2): boolean {
-        const size = self.scene.size()
-        return 0 <= p.x && p.x < size.x && 0 <= p.y && p.y < size.y
-    }
-
     function castRay(p1: Vector2, p2: Vector2): Vector2 {
         const start = p1
         while (start.sqrDistanceTo(p1) < FAR_CLIPPING_PLANE * FAR_CLIPPING_PLANE) {
-            const c = getHittingCellPos(p1, p2)
-            if (isPointInSceneBounds(c) && scene.cells[c.y][c.x] !== null) break
-
+            const c = hittingCell(p1, p2)
+            if (self.scene.get(c)) break
             const p3 = rayStep(p1, p2)
 
             p1 = p2
